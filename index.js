@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan')
 
 let notes = [{
     "id": 1,
@@ -22,6 +23,20 @@ let notes = [{
     "number": "39-23-6423122"
 }
 ]
+morgan.token('type', (req) => JSON.stringify(req.body))
+const infor = function (tokens, req, res) {
+    return [
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'), '-',
+        tokens['response-time'](req, res), 'ms',
+        tokens.type(req, res)
+    ].join(' ')
+}
+app.use(express.json());
+
+app.use(morgan(infor))
 const date = new Date();
 const gmtTime = date.toUTCString();
 const info = `Phonebook has info for ${notes.length} people <br/><br/> ${gmtTime} (Indian Standard Time)`
@@ -35,20 +50,55 @@ app.get('/api/persons', (request, response) => {
 app.get('/info', (request, response) => {
     response.send(info)
 
-   
+
 })
-app.get('/api/persons/:id' , (request, response)=>{
+app.get('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
-    const note = notes.find(note=> note.id === id)
+    const note = notes.find(note => note.id === id)
     console.log(note)
-    if(note){
+    if (note) {
         response.json(note)
-    }else {
+    } else {
         response.status(404).end()
     }
 
-   
 
+
+})
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    console.log(id)
+    notes = notes.filter(note => note.id !== id)
+    console.log(notes)
+    response.status(204).end()
+})
+const generateId = () => {
+    const maxId = notes.length > 0 ?
+        Math.max(...notes.map(n => n.id)) :
+        0
+    return maxId + 1
+}
+
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body
+    console.log(body)
+    if (!body.name || !body.number) {
+        return response.status(400).json({
+            error: 'name or number missing'
+        });
+    }
+
+
+    const note = {
+        id: generateId(),
+        name: body.name,
+        number: body.number,
+    }
+    console.log(note)
+    notes = notes.concat(note)
+
+    response.json(note)
 })
 const PORT = 4000
 
