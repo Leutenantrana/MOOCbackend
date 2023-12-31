@@ -3,28 +3,28 @@ const app = express()
 const morgan = require('morgan')
 
 let notes = [{
-    "id": 1,
-    "name": "Arto Hellas",
-    "number": "040-123456"
-},
-{
-    "id": 2,
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523"
-},
-{
-    "id": 3,
-    "name": "Dan Abramov",
-    "number": "12-43-234345"
-},
-{
-    "id": 4,
-    "name": "Mary Poppendieck",
-    "number": "39-23-6423122"
-}
+        "id": 1,
+        "name": "Arto Hellas",
+        "number": "040-123456"
+    },
+    {
+        "id": 2,
+        "name": "Ada Lovelace",
+        "number": "39-44-5323523"
+    },
+    {
+        "id": 3,
+        "name": "Dan Abramov",
+        "number": "12-43-234345"
+    },
+    {
+        "id": 4,
+        "name": "Mary Poppendieck",
+        "number": "39-23-6423122"
+    }
 ]
 morgan.token('type', (req) => JSON.stringify(req.body))
-const infor = function (tokens, req, res) {
+const infor = function(tokens, req, res) {
     return [
         tokens.method(req, res),
         tokens.url(req, res),
@@ -100,7 +100,7 @@ app.post('/api/persons', (request, response) => {
 
     response.json(note)
 })
-const PORT = 4000
+const PORT = process.env.PORT || 5001
 
 app.listen(PORT, () => {
     console.log(`app running at port : ${PORT}`)
