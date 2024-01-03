@@ -8,29 +8,11 @@ app.use(express.json())
 app.use(cors())
 app.use(express.static('build'))
 
+const Phonebook = require('./models/notes')
 
 
-let notes = [{
-        "id": 1,
-        "name": "Arto Hellas",
-        "number": "040-123456"
-    },
-    {
-        "id": 2,
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523"
-    },
-    {
-        "id": 3,
-        "name": "Dan Abramov",
-        "number": "12-43-234345"
-    },
-    {
-        "id": 4,
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122"
-    }
-]
+
+
 morgan.token('type', (req) => JSON.stringify(req.body))
 const infor = function(tokens, req, res) {
     return [
@@ -47,67 +29,88 @@ app.use(express.json());
 app.use(morgan(infor))
 const date = new Date();
 const gmtTime = date.toUTCString();
-const info = `Phonebook has info for ${notes.length} people <br/><br/> ${gmtTime} (Indian Standard Time)`
+
+
+const info = `Phonebook has info for ${Phonebook.length} people <br/><br/> ${gmtTime} (Indian Standard Time)`
 
 
 app.get('/api/persons', (request, response) => {
-    response.json(notes)
+    Phonebook.find({})
+        .then(notes => {
+            response.json(notes)
+        })
+        .catch((error) => {
+            console.error(error.message)
+        })
 })
 
 
 app.get('/info', (request, response) => {
-    response.send(info)
+    Phonebook.countDocuments({}, (err, count) => {
+        if (err) {
+            console.error('Error counting documents:', err.message);
+            mongoose.connection.close();
+        } else {
+            console.log(`Total number of entries in the database: ${count}`);
+            mongoose.connection.close();
+        }
+    });
 
 
 })
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const note = notes.find(note => note.id === id)
-    console.log(note)
-    if (note) {
-        response.json(note)
-    } else {
-        response.status(404).end()
-    }
+    Phonebook.findById(request.params.id)
+        .then(person => {
+            response.json(person)
+
+        })
+        .catch(() => {
+            response.status(404).end()
+        })
 
 
 
 })
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    console.log(id)
-    notes = notes.filter(note => note.id !== id)
-    console.log(notes)
-    response.status(204).end()
+app.delete('/:id', (request, response, next) => {
+    Phonebook.findByIdAndDelete(request.params.id)
+        .then(() => {
+            response.status(203).end()
+        })
+        .catch(error => next(error))
 })
-const generateId = () => {
-    const maxId = notes.length > 0 ?
-        Math.max(...notes.map(n => n.id)) :
-        0
-    return maxId + 1
-}
-
-
-app.post('/api/persons', (request, response) => {
+app.put('/:id', (request, response, next) => {
     const body = request.body
-    console.log(body)
-    if (!body.name || !body.number) {
-        return response.status(400).json({
-            error: 'name or number missing'
-        });
-    }
 
-
-    const note = {
-        id: generateId(),
+    const person = new Phonebook({
         name: body.name,
         number: body.number,
-    }
-    console.log(note)
-    notes = notes.concat(note)
+    })
 
-    response.json(note)
+    Phonebook.findByIdAndUpdate(request.params.id, person, { new: true })
+        .then(updatedNote => {
+            response.json(updatedNote)
+                .catch(error => next(error))
+        })
 })
+
+app.post('/', (request, response, next) => {
+    const body = request.body
+
+    const note = new Phonebook({
+        name: body.name,
+        number: body.number
+    })
+    note.save()
+        .then(savednote => {
+            response.json(savednote)
+        })
+        .catch(error => next(error))
+})
+
+
+
+
+
 const PORT = process.env.PORT || 5001
 
 app.listen(PORT, () => {
