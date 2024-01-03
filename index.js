@@ -81,10 +81,10 @@ app.delete('/api/persons/:id', (request, response, next) => {
 app.put('/api/persons/:id', (request, response, next) => {
     const body = request.body
 
-    const person = new Phonebook({
+    const person = {
         name: body.name,
         number: body.number,
-    })
+    }
 
     Phonebook.findByIdAndUpdate(request.params.id, person, { new: true })
         .then(updatedNote => {
