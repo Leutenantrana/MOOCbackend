@@ -71,7 +71,7 @@ app.get('/api/persons/:id', (request, response) => {
 
 
 })
-app.delete('/:id', (request, response, next) => {
+app.delete('/api/persons/:id', (request, response, next) => {
     Phonebook.findByIdAndDelete(request.params.id)
         .then(() => {
             response.status(203).end()
@@ -93,19 +93,45 @@ app.put('/:id', (request, response, next) => {
         })
 })
 
-app.post('/', (request, response, next) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
-    const note = new Phonebook({
-        name: body.name,
-        number: body.number
+    const personName = body.name
+    const personNumber = body.number
+
+    if (Object.keys(body).length === 0) {
+        return response.status(400).json({
+            error: 'content missing'
+        })
+    }
+
+    const person = new Phonebook({
+        name: personName,
+        number: personNumber
     })
-    note.save()
-        .then(savednote => {
-            response.json(savednote)
+
+    person.save()
+        .then(savedPerson => savedPerson.toJSON())
+        .then(savedAndFormattedPerson => {
+            console.log(`added ${person.name} number ${person.number} to phonebook`)
+            response.json(savedAndFormattedPerson)
         })
         .catch(error => next(error))
 })
+
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
+    next(error)
+}
+
+app.use(errorHandler)
 
 
 
